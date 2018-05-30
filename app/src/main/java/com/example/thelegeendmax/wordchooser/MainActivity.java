@@ -1,5 +1,6 @@
 package com.example.thelegeendmax.wordchooser;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -12,6 +13,7 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,19 +24,37 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
+
 import org.w3c.dom.Text;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
+import java.util.Scanner;
+import java.util.stream.Stream;
 
 public class MainActivity extends AppCompatActivity {
     private static int REQUEST_CODE = 43;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE);
         setContentView(R.layout.activity_main);
+
 
     }
 
@@ -49,31 +69,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startSearch(){
-        Intent chooseFile = new Intent(Intent.ACTION_GET_CONTENT);
-        chooseFile.setType("*/*");
-        //chooseFile.setType("application/pdf");
-        startActivityForResult(chooseFile, REQUEST_CODE);
-    }
+        String[] mimeTypes =
+                {"image/*","application/pdf","text/*","application/vnd.ms-powerpoint","application/vnd.ms-excel"};
 
-    public  String getPath2(Context context, Uri uri) throws URISyntaxException {
-        if ("content".equalsIgnoreCase(uri.getScheme())) {
-            String[] projection = { "_data" };
-            Cursor cursor = null;
-            try {
-                cursor = context.getContentResolver().query(uri, projection, null, null, null);
-                int column_index = cursor.getColumnIndexOrThrow("_data");
-                if (cursor.moveToFirst()) {
-                    return cursor.getString(column_index);
-                }
-            } catch (Exception e) {
-                // Eat it
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            intent.setType(mimeTypes.length == 1 ? mimeTypes[0] : "*/*");
+            if (mimeTypes.length > 0) {
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
             }
+        } else {
+            String mimeTypesStr = "";
+            for (String mimeType : mimeTypes) {
+                mimeTypesStr += mimeType + "|";
+            }
+            intent.setType(mimeTypesStr.substring(0,mimeTypesStr.length() - 1));
         }
-        else if ("file".equalsIgnoreCase(uri.getScheme())) {
-            return uri.getPath();
-        }
-
-        return null;
+        startActivityForResult(Intent.createChooser(intent,"ChooseFile"), REQUEST_CODE);
     }
 
 
@@ -87,9 +101,34 @@ public class MainActivity extends AppCompatActivity {
                 TextView Path = (TextView) findViewById(R.id.path);
                 String path="";
                 path = getPath(this,uri);
-                Path.setText(path);
+                String hash="";
+                try{
+                    FileInputStream inputStream = new FileInputStream(path);
+                    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+                    byte[] bytesBuffer = new byte[1024];
+                    int bytesRead = -1;
+
+                    while ((bytesRead = inputStream.read(bytesBuffer)) != -1) {
+                        digest.update(bytesBuffer, 0, bytesRead);
+                    }
+
+                    byte[] hashedBytes = digest.digest();
+                    hash= bytesToHex(hashedBytes);
                 }
+                catch(Exception e){
+
+                }
+                Path.setText(hash);
+
+
+            }
         }
+    }
+    public static String bytesToHex(byte[] bytes) {
+        StringBuffer result = new StringBuffer();
+        for (byte byt : bytes) result.append(Integer.toString((byt & 0xff) + 0x100, 16).substring(1));
+        return result.toString();
     }
     /**
      * Get a file path from a Uri. This will get the the path for Storage Access
