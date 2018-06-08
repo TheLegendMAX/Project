@@ -24,6 +24,13 @@ public class Main2Activity extends AppCompatActivity {
         WifiManager wifiManager = (WifiManager) this.getApplicationContext().getSystemService(this.WIFI_SERVICE);
         if(wifiManager.isWifiEnabled()){
             sw1.setChecked(true);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            if(wifiInfo.getBSSID().equals("b8:27:eb:1c:0a:69")) {
+                TextView connection = (TextView) findViewById(R.id.textView6);
+                connection.setText("Connected");
+                connection.setTextColor(Color.parseColor("#409038"));
+                startActivity(new Intent(getApplicationContext(),MainActivity.class));
+            }
         }
         sw1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
