@@ -58,6 +58,21 @@ public class Main2Activity extends AppCompatActivity {
             }
         });
     }
+    protected void onResume() {
+        super.onResume();
+        Switch sw1 = (Switch) findViewById(R.id.switch1) ;
+        WifiManager wifiManager = (WifiManager) this.getApplicationContext().getSystemService(this.WIFI_SERVICE);
+        if(wifiManager.isWifiEnabled()) {
+            sw1.setChecked(true);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            if (wifiInfo.getBSSID().equals("b8:27:eb:1c:0a:69")) {
+                TextView connection = (TextView) findViewById(R.id.textView6);
+                connection.setText("Connected");
+                connection.setTextColor(Color.parseColor("#409038"));
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+            }
+        }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
