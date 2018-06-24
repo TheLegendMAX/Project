@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -91,11 +92,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
     private void startSearch() {
-        /*
+
         String[] mimeTypes =
                 {"image/*","application/pdf","text/*","application/vnd.ms-powerpoint","application/vnd.ms-excel"};
-                */
-        String[] mimeTypes = {"application/pdf"};
+
+        //String[] mimeTypes = {"application/pdf"};
 
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -151,6 +152,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
         if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             final Uri uri = data.getData();
+            Cursor returnCursor =
+                    getContentResolver().query(uri, null, null, null, null);
+            int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+            returnCursor.moveToFirst();
+            final String name = returnCursor.getString(nameIndex);
             final String user = "pi";
             final String password = "hgyghj123";
             final String host = "192.168.22.1";
@@ -168,10 +174,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         InputStream inputStream = cr.openInputStream(uri);
                         ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
                         sftpChannel.connect();
-                        sftpChannel.put(inputStream, "/home/pi/Desktop/Test.pdf");
+                        sftpChannel.put(inputStream, ("/home/pi/Desktop/"+name));
                         sftpChannel.disconnect();
                         Channel channel = session.openChannel("exec");
-                        String command = "cd Desktop;lpr Test.pdf;rm Test.pdf";
+                        String command = "cd Desktop;lpr "+name+";rm "+name;
                         ((ChannelExec) channel).setCommand(command);
                         channel.connect();
                         channel.disconnect();
