@@ -2,12 +2,15 @@ package com.example.thelegeendmax.wordchooser;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -65,7 +68,37 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         requestPermissions();
+        IntentFilter filter=new IntentFilter();
+        filter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
+        filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        registerReceiver(receiver,filter);
     }
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            WifiManager wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
+            if(wifiManager.isWifiEnabled()){
+                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                try{
+                    if(!(wifiInfo.getBSSID().equals("b8:27:eb:a9:c2:f0"))) {
+                        unregisterReceiver(receiver);
+                        Intent i = new Intent(MainActivity.this, Main2Activity.class);
+                        startActivity(i);
+                        finish();  //Kill the activity from which you will go to next activity
+                    }
+                }
+                catch(Exception e){
+                    //finish();
+                }
+            }
+            else{
+                Intent i = new Intent(MainActivity.this, Main2Activity.class);
+                startActivity(i);
+                finish();  //Kill the activity from which you will go to next activity
+                unregisterReceiver(receiver);
+            }
+        }
+    };
 
     @AfterPermissionGranted(ALL_PERMISSIONS)
     private void requestPermissions() {
@@ -89,6 +122,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 startSearch();
             }
         });
+        WifiManager wifiManager = (WifiManager) this.getApplicationContext().getSystemService(this.WIFI_SERVICE);
+
+
+
     }
 
     private void startSearch() {
