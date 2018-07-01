@@ -61,7 +61,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private static final int REQUEST_CODE = 43;
     private static final int ALL_PERMISSIONS = 101;
     private static final String permissions[] = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION};
-    private String aaaa;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +71,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         filter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
         filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
         registerReceiver(receiver,filter);
+        Button choose = (Button) findViewById(R.id.choose);
+        choose.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                startSearch();
+            }
+        });
     }
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -113,20 +118,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
-
-    protected void onResume() {
-        super.onResume();
-        Button upload = (Button) findViewById(R.id.upload);
-        upload.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                startSearch();
-            }
-        });
-        WifiManager wifiManager = (WifiManager) this.getApplicationContext().getSystemService(this.WIFI_SERVICE);
-
-
-
-    }
+    private Uri uri;
 
     private void startSearch() {
 
@@ -135,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         //String[] mimeTypes = {"application/pdf"};
 
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -159,81 +151,24 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 15 && resultCode == Activity.RESULT_OK) {
-            if (data != null) {
-                Uri uri = data.getData();
-                TextView HASH = (TextView) findViewById(R.id.hash);
-                String hash = "";
-                try {
-                    ContentResolver cr = this.getContentResolver();
-                    InputStream inputStream = cr.openInputStream(uri);
-                    MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-                    byte[] bytesBuffer = new byte[1024];
-                    int bytesRead = -1;
-
-                    while ((bytesRead = inputStream.read(bytesBuffer)) != -1) {
-                        digest.update(bytesBuffer, 0, bytesRead);
-                    }
-
-                    byte[] hashedBytes = digest.digest();
-                    hash = bytesToHex(hashedBytes);
-                } catch (Exception e) {
-
-                }
-                HASH.setText(hash);
-            }
-        }
         if (requestCode == AppSettingsDialog.DEFAULT_SETTINGS_REQ_CODE) {
             requestPermissions();
         }
         if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            final Uri uri = data.getData();
+            uri = data.getData();
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent .setClass(MainActivity.this,  Main3Activity.class);
+            intent .putExtra("KEY", uri.toString());
+            startActivity(intent);
+
+            unregisterReceiver(receiver);
+            finish();
             Cursor returnCursor =
                     getContentResolver().query(uri, null, null, null, null);
             int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
             returnCursor.moveToFirst();
-            final String name = returnCursor.getString(nameIndex);
-            final String user = "pi";
-            final String password = "hgyghj123";
-            final String host = "192.168.22.1";
-            final int port = 22;
-            Thread connectionThread = new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        JSch jsch = new JSch();
-                        Session session = jsch.getSession(user, host, port);
-                        session.setPassword(password);
-                        session.setConfig("StrictHostKeyChecking", "no");
-                        session.connect();
-                        ContentResolver cr = getApplicationContext().getContentResolver();
-                        //String type = cr.getType(uri);
-                        InputStream inputStream = cr.openInputStream(uri);
-                        ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
-                        sftpChannel.connect();
-                        sftpChannel.put(inputStream, ("/home/pi/Desktop/"+name));
-                        sftpChannel.disconnect();
-                        Channel channel = session.openChannel("exec");
-                        String command = "cd Desktop;lpr "+name+";rm "+name;
-                        ((ChannelExec) channel).setCommand(command);
-                        channel.connect();
-                        channel.disconnect();
-                        session.disconnect();
-
-                    } catch (Exception e) {
-                        System.out.println(e);
-                    }
-                }
-            });
-            connectionThread.start();
         }
-    }
-
-    public static String bytesToHex(byte[] bytes) {
-        StringBuffer result = new StringBuffer();
-        for (byte byt : bytes)
-            result.append(Integer.toString((byt & 0xff) + 0x100, 16).substring(1));
-        return result.toString();
     }
 
     @Override
