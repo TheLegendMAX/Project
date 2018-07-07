@@ -11,6 +11,8 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -85,7 +87,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             if(wifiManager.isWifiEnabled()){
                 WifiInfo wifiInfo = wifiManager.getConnectionInfo();
                 try{
-                    if(!(wifiInfo.getBSSID().equals("b8:27:eb:a9:c2:f0"))) {
+                    ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                    NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+                    if(!(wifiInfo.getBSSID().equals("b8:27:eb:a9:c2:f0"))||!(networkInfo.isConnected()&&networkInfo.getType()==ConnectivityManager.TYPE_WIFI)) {
                         unregisterReceiver(receiver);
                         Intent i = new Intent(MainActivity.this, Main2Activity.class);
                         startActivity(i);
