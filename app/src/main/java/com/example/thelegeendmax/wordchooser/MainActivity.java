@@ -62,7 +62,7 @@ import pub.devrel.easypermissions.EasyPermissions;
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
     private static final int REQUEST_CODE = 43;
     private static final int ALL_PERMISSIONS = 101;
-    private static final String permissions[] = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION};
+    private static final String permissions[] = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 try{
                     ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
                     NetworkInfo networkInfo = cm.getActiveNetworkInfo();
-                    if(!(wifiInfo.getBSSID().equals("b8:27:eb:a9:c2:f0"))||!(networkInfo.isConnected()&&networkInfo.getType()==ConnectivityManager.TYPE_WIFI)) {
+                    if(!(unornamatedSsid(wifiInfo.getSSID()).equals("Print_Server"))||!(networkInfo.isConnected()&&networkInfo.getType()==ConnectivityManager.TYPE_WIFI)) {
                         unregisterReceiver(receiver);
                         Intent i = new Intent(MainActivity.this, Main2Activity.class);
                         startActivity(i);
@@ -123,6 +123,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
     private Uri uri;
+
+    private String unornamatedSsid(String ssid) {
+        ssid = ssid.replaceFirst("^\"", "");
+        return ssid.replaceFirst("\"$", "");
+    }
 
     private void startSearch() {
 

@@ -6,7 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
+import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.provider.OpenableColumns;
@@ -25,13 +28,19 @@ import com.jcraft.jsch.Session;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,7 +67,6 @@ public class Main3Activity extends AppCompatActivity {
         print.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v) {
                 final String user = "pi";
-                final String password = "hgyghj123";
                 final String host = "192.168.22.1";
                 final int port = 22;
                 final Thread connectionThread = new Thread(new Runnable() {
@@ -66,7 +74,11 @@ public class Main3Activity extends AppCompatActivity {
                         try {
                             JSch jsch = new JSch();
                             Session session = jsch.getSession(user, host, port);
-                            session.setPassword(password);
+                            InputStream privateKeyByteStream = getResources()
+                                    .openRawResource(
+                                            getResources().getIdentifier("id_rsa", "raw", getPackageName()));
+                            byte[] prvkey= readFully(privateKeyByteStream);
+                            jsch.addIdentity("Identity",prvkey,null,null);
                             session.setConfig("StrictHostKeyChecking", "no");
                             session.connect();
                             ContentResolver cr = getApplicationContext().getContentResolver();
@@ -100,7 +112,7 @@ public class Main3Activity extends AppCompatActivity {
                             commander.println("rm "+name);
                             commander.close();
                             String[] ab = ret.split("\r\n");
-                            if(Integer.parseInt(ab[12])==1)
+                            if(Integer.parseInt(ab[12])!=0)
                                 status.setText("Status: Printing failed, please make sure that the printer is on and connected to the device!");
                             else{
                                 status.setText("Status: Printing ..");
@@ -122,6 +134,21 @@ public class Main3Activity extends AppCompatActivity {
         });
 
     }
+    private String unornamatedSsid(String ssid) {
+        ssid = ssid.replaceFirst("^\"", "");
+        return ssid.replaceFirst("\"$", "");
+    }
+    public static byte[] readFully(InputStream input) throws IOException
+    {
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        while ((bytesRead = input.read(buffer)) != -1)
+        {
+            output.write(buffer, 0, bytesRead);
+        }
+        return output.toByteArray();
+    }
     private Uri uri;
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -130,7 +157,9 @@ public class Main3Activity extends AppCompatActivity {
             if(wifiManager.isWifiEnabled()){
                 WifiInfo wifiInfo = wifiManager.getConnectionInfo();
                 try{
-                    if(!(wifiInfo.getBSSID().equals("b8:27:eb:a9:c2:f0"))) {
+                    ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                    NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+                    if(!(unornamatedSsid(wifiInfo.getSSID()).equals("Print_Server"))||!(networkInfo.isConnected()&&networkInfo.getType()==ConnectivityManager.TYPE_WIFI)) {
                         unregisterReceiver(receiver);
                         Intent i = new Intent(Main3Activity.this, Main2Activity.class);
                         startActivity(i);
