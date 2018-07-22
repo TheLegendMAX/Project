@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.example.thelegeendmax.wordchooser.Main4Activity">
+    tools:context="com.example.thelegeendmax.wordchooser.PrintOrScan">
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"

@@ -18,21 +18,17 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name=".MainActivity">
-            <intent-filter>
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".Main2Activity">
+        <activity android:name=".ChooseFileActivity"></activity>
+        <activity android:name=".CheckingWifiActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".Main3Activity" />
-        <activity android:name=".Main4Activity" />
-        <activity android:name=".Main5Activity"></activity>
+        <activity android:name=".PrintingActivity" />
+        <activity android:name=".PrintOrScan" />
+        <activity android:name=".ScanningActivity"></activity>
     </application>
+
 
 </manifest>
